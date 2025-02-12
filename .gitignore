@@ -1,5 +1,5 @@
 /node_modules
-.idx
+/.idx
 .vscode
 
 /src/routes/public/uploads
