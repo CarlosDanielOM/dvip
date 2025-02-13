@@ -99,15 +99,35 @@ router.delete('/', async (req, res) => {
 
     let key = req.query.key || null;
     let type = req.query.type || null;
+    let van = req.query.van || null;
 
+    let keys = [];
+    
     if(!key) {
-        if(!type) {
-            res.status(400).json({error: true, message: 'No key or type provided', status: 400});
+        if(!type && !van) {
+            res.status(400).json({error: true, message: 'No key or (type and van) provided', status: 400});
             return;
+        }
+
+        for(let ty of type) {
+            let keyUrl = await cacheClient.get(`dvip:${van}:${ty}`);
+            if(!keyUrl) continue;
+            keys.push(keyUrl);
         }
     }
 
-    console.log({key, type});
+    if(type && van) {
+        for(let ty of type) {
+            let keyUrl = await cacheClient.get(`dvip:${van}:${ty}`);
+            if(!keyUrl) continue;
+            keys.push(keyUrl);
+        }
+    }
+
+    for(let k of key) {
+        if(!k) continue;
+        keys.push(k);
+    }
 
     res.send({error: false, message: 'Successfully deleted picture', status: 200});
 
