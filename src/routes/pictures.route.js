@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const router = express.Router();
-const { S3Client, ListBucketsCommand, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, ListBucketsCommand, GetObjectCommand, PutObjectCommand, DeleteObjectsCommand } = require('@aws-sdk/client-s3');
 const multer = require('multer');
 const fs = require('fs');
 const { getClient } = require('../../util/db/dragonflydb');
@@ -92,6 +92,25 @@ router.post('/', async (req, res) => {
         res.send({error: false, message: 'Successfully uploaded picture', status: 200, url: pictureUrl, previewName: pictureName});
         // res.json({error: false, message: 'Successfully uploaded picture', status: 200});
     })
+});
+
+router.delete('/', async (req, res) => {
+    const cacheClient = getClient();
+
+    let key = req.query.key || null;
+    let type = req.query.type || null;
+
+    if(!key) {
+        if(!type) {
+            res.status(400).json({error: true, message: 'No key or type provided', status: 400});
+            return;
+        }
+    }
+
+    console.log({key, type});
+
+    res.send({error: false, message: 'Successfully deleted picture', status: 200});
+
 });
 
 module.exports = router;
