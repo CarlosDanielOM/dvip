@@ -4,6 +4,7 @@ const router = express.Router();
 const { S3Client, ListBucketsCommand, GetObjectCommand, PutObjectCommand } = require('@aws-sdk/client-s3');
 const multer = require('multer');
 const fs = require('fs');
+const { getClient } = require('../../util/db/dragonflydb');
 
 const pictureSchema = require('../../schema/picture');
 
@@ -33,17 +34,7 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-    // const storage = multer.diskStorage({
-    //     destination: (req, file, cb) => {
-    //         cb(null, `${__dirname}/public/uploads`);
-    //     },
-    //     filename: (req, file, cb) => {
-    //         cb(null, pictureName);
-    //     },
-    //     limits: {
-    //         fileSize: 1024 * 1024 * 5
-    //     }
-    // });
+    const cacheClient = getClient();
 
     const storage = multer.memoryStorage();
 
@@ -93,6 +84,8 @@ router.post('/', async (req, res) => {
         }
 
         let pictureNameURI = `${dir}${pictureName}`;
+
+        await cacheClient.set(`dvip:${pictureData.vanType}${pictureData.vanNumber}:${pictureData.type}`, pictureNameURI);
 
         let pictureUrl = `${S3_PUBLIC_ENDPOINT}/${pictureNameURI}`;
         

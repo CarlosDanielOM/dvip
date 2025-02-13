@@ -61,4 +61,6 @@ router.post('/login', async (req, res) => {
     res.json({error: false, message: 'Successfully logged in', status: 200, data: dispatch, valid: true});
 });
 
+router.delete('/', async (req, res) => {}); 
+
 module.exports = router;
