@@ -34,6 +34,10 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
+    res.status(200).send({error: false, message: "Pictures saved successfully", status: 200})
+});
+
+router.post('/upload', async (req, res) => {
     const cacheClient = getClient();
 
     const storage = multer.memoryStorage();
@@ -114,19 +118,52 @@ router.delete('/', async (req, res) => {
             if(!keyUrl) continue;
             keys.push(keyUrl);
         }
-    }
+    } else {
+        if(type && van) {
+            for(let ty of type) {
+                let keyUrl = await cacheClient.get(`dvip:${van}:${ty}`);
+                if(!keyUrl) continue;
+                keys.push(keyUrl);
+            }
+        }
 
-    if(type && van) {
-        for(let ty of type) {
-            let keyUrl = await cacheClient.get(`dvip:${van}:${ty}`);
-            if(!keyUrl) continue;
-            keys.push(keyUrl);
+        for(let k of key) {
+            if(!k) continue;
+            keys.push(k);
         }
     }
 
-    for(let k of key) {
-        if(!k) continue;
-        keys.push(k);
+
+    deletionKeys = [];
+
+    for(let k of keys) {
+        deletionKeys.push({Key: k});
+    }
+
+    let deleteCommand = new DeleteObjectsCommand({
+        Bucket: process.env.S3_BUCKET,
+        Delete: {
+            Objects: deletionKeys
+        }
+    })
+
+    try {
+        s3.send(deleteCommand);
+
+        for(let k of keys) {
+            let fileName = k.split('/').pop();
+            if(!fs.existsSync(`${__dirname}/public/uploads/${fileName}`)) continue;
+            fs.unlink(`${__dirname}/public/uploads/${fileName}`, () => {});
+        }
+        
+        for(let ty of type) {
+            await cacheClient.del(`dvip:${van}:${ty}`);
+        }
+        
+    } catch (err) {
+        console.log({err, where: 'Deleting picture'});
+        res.status(500).json({error: true, message: 'Error deleting picture', status: 500});
+        return;
     }
 
     res.send({error: false, message: 'Successfully deleted picture', status: 200});
