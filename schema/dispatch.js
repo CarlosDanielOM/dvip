@@ -8,7 +8,9 @@ const dispatchSchema = new Schema({
     password: {type: String, required: true},
     created_at: {type: Date, default: Date.now},
     role: {type: String, default: 'dispatch'},
-    active: {type: Boolean, default: true}
+    active: {type: Boolean, default: true},
+    company: {type: String, required: true},
+    created_at: {type: Date, default: Date.now},
 });
 
 const dispatch = mongoose.model('dispatch', dispatchSchema);
