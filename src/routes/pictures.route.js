@@ -5,6 +5,7 @@ const { S3Client, ListBucketsCommand, GetObjectCommand, PutObjectCommand, Delete
 const multer = require('multer');
 const fs = require('fs');
 const { getClient } = require('../../util/db/dragonflydb');
+const capitalize = require('../../util/capitalization');
 
 const pictureSchema = require('../../schema/picture');
 
@@ -27,14 +28,70 @@ router.get('/', async (req, res) => {
         return;
     }
 
-    // let keyUrl = `${S3_PUBLIC_ENDPOINT}/${key}`;
+    let exists = await checkForPicture(key);
+
+    if(!exists) {
+        res.status(404).json({error: true, message: 'Picture not found', status: 404});
+        return;
+    }
 
     return res.sendFile(`${__dirname}/public/uploads/${key}`);
     
 });
 
 router.post('/', async (req, res) => {
-    res.status(200).send({error: false, message: "Pictures saved successfully", status: 200})
+    let cacheClient = getClient();
+
+    let driverName = req.body['driver-name'];
+    let driverId = req.body['driver-id'];
+    let vanType = req.body['van-type'];
+    let vanNumber = req.body['van-number'];
+    let vehicle = `${vanType}${vanNumber}`;
+    let date = req.body.date;
+
+    if(!driverName || !vanType || !vanNumber || !date) {
+        res.status(400).json({error: true, message: 'Missing required fields', status: 400});
+        return;
+    }
+
+    let keys = await cacheClient.keys(`dvip:${vehicle}:*`);
+
+    if(keys.length === 0) {
+        res.status(400).json({error: true, message: 'No pictures found', status: 400});
+        return;
+    }
+
+    for(let key of keys) {
+        let picturePath = await cacheClient.get(key);
+
+        let type = key.split(':')[2].split('-')[0];
+        let pictureTitle = `${vehicle} ${capitalize(type)} View`;
+        let pictureUrl = `${S3_PUBLIC_ENDPOINT}/${picturePath}`;
+        
+        let picture = new pictureSchema({
+            title: pictureTitle,
+            url: pictureUrl,
+            path: picturePath,
+            van_type: vanType,
+            van_number: vanNumber,
+            view_type: type,
+            driver: driverId,
+            created_at: Date.now()
+        });
+
+        try {
+            await picture.save();
+            await cacheClient.del(key);
+            await deleteLocalPictures([picturePath]);
+        } catch (err) {
+            console.log({err, where: 'Saving picture'});
+            res.status(500).json({error: true, message: 'Error saving picture', status: 500});
+            return;
+        }
+
+    }
+    
+    res.json({error: false, message: 'Successfully saved picture', status: 200});
 });
 
 router.post('/upload', async (req, res) => {
@@ -150,11 +207,7 @@ router.delete('/', async (req, res) => {
     try {
         s3.send(deleteCommand);
 
-        for(let k of keys) {
-            let fileName = k.split('/').pop();
-            if(!fs.existsSync(`${__dirname}/public/uploads/${fileName}`)) continue;
-            fs.unlink(`${__dirname}/public/uploads/${fileName}`, () => {});
-        }
+        await deleteLocalPictures(keys);
         
         for(let ty of type) {
             await cacheClient.del(`dvip:${van}:${ty}`);
@@ -169,5 +222,25 @@ router.delete('/', async (req, res) => {
     res.send({error: false, message: 'Successfully deleted picture', status: 200});
 
 });
+
+async function checkForPicture(key, retries, maxRetries = 5, delay = 2000) {
+    let exists = fs.existsSync(`${__dirname}/public/uploads/${key}`);
+    if(!exists) {
+        // Wait 2 seconds
+        await new Promise(resolve => setTimeout(resolve, delay));
+        checkForPicture(key, retries + 1, maxRetries, delay);
+    }
+
+    return exists;
+}
+
+async function deleteLocalPictures(keys) {
+    for(let k of keys) {
+        if(!k) continue;
+        let fileName = k.split('/').pop();
+        if(!fs.existsSync(`${__dirname}/public/uploads/${fileName}`)) continue;
+        fs.unlink(`${__dirname}/public/uploads/${fileName}`, () => {});
+    }
+}
 
 module.exports = router;
