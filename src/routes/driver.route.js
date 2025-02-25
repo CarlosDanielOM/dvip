@@ -5,19 +5,15 @@ const { getClient } = require('../../util/db/dragonflydb');
 const driverSchema = require('../../schema/driver');
 
 router.get('/', async (req, res) => {
-    let cacheClient = getClient();
+    let drivers = await driverSchema.find();
 
-    let drivers = await cacheClient.keys('driver:*');
-
-    res.json({error: false, message: 'Successfully fetched drivers', status: 200, data: drivers});
+    res.json({error: false, message: 'Successfully fetched drivers', status: 200, data: {drivers}});
 });
 
 router.get('/:id', async (req, res) => {
-    let cacheClient = getClient();
-
     let id = req.params.id;
 
-    let driver = await cacheClient.get(`driver:${id}`);
+    let driver = await driverSchema.findById(id);
 
     if(!driver) {
         res.status(404).json({error: true, message: 'Driver not found', status: 404});
@@ -94,6 +90,43 @@ router.post('/login', async (req, res) => {
     }
 
     res.json({error: false, message: 'Successfully logged in', status: 200, data: driverData, valid: true});
+});
+
+router.patch('/:id', async (req, res) => {
+    let body = req.body;
+    let driverId = req.params.id;
+    let driver = null;
+
+    if(body.pin) {
+        let exists = await driverSchema.exists({pin: body.pin});
+        if(exists) {
+            res.status(400).json({error: true, message: 'Pin already exists', status: 400});
+            return;
+        }
+    }
+        
+    try {
+        driver = await driverSchema.findByIdAndUpdate(driverId, body, {new: true});
+    } catch (err) {
+        console.log({err, where: 'Saving driver'});
+        res.status(500).json({error: true, message: 'Error saving driver', status: 500});
+        return;
+    }
+
+    res.json({error: false, message: 'Successfully updated driver', status: 200, data: driver});
+})
+
+router.delete('/:id', async (req, res) => {
+    let id = req.params.id;
+
+    let driver = await driverSchema.findByIdAndDelete(id);
+
+    if(!driver) {
+        res.status(404).json({error: true, message: 'Driver not found', status: 404});
+        return;
+    }
+
+    res.json({error: false, message: 'Successfully deleted driver', status: 200});
 });
 
 module.exports = router;

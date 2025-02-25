@@ -20,7 +20,7 @@ const s3 = new S3Client({
     endpoint: process.env.S3_ENDPOINT
 });
 
-router.get('/', async (req, res) => {
+router.get('/preview', async (req, res) => {
     let key = req.query.key;
 
     if(!key) {
