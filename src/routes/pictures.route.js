@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const router = express.Router();
-const { S3Client, ListBucketsCommand, GetObjectCommand, PutObjectCommand, DeleteObjectsCommand } = require('@aws-sdk/client-s3');
+const { S3Client, ListBucketsCommand, GetObjectCommand, PutObjectCommand, DeleteObjectsCommand, ListObjectsV2Command } = require('@aws-sdk/client-s3');
 const multer = require('multer');
 const fs = require('fs');
 const { getClient } = require('../../util/db/dragonflydb');
@@ -18,6 +18,27 @@ const s3 = new S3Client({
         secretAccessKey: process.env.S3_SECRET_ACCESS_KEY
     },
     endpoint: process.env.S3_ENDPOINT
+});
+
+router.get('/', async (req, res) => {
+    let input = {
+        Bucket: process.env.S3_BUCKET,
+        prefix: '2025/'
+    }
+    let command = new ListObjectsV2Command(input);
+    let response = await s3.send(command);
+
+    let picturesUrls = [];
+
+    for(let picture of response.Contents) {
+        let pictureUrl = `${S3_PUBLIC_ENDPOINT}/${picture.Key}`;
+        picturesUrls.push(pictureUrl);
+    }
+
+    response.Contents = picturesUrls;
+    
+    res.json({error: false, message: 'Successfully fetched pictures', status: 200, data: response.Contents}); res
+    // res.json({error: false, message: 'Successfully fetched pictures', status: 200, data: {pictures}});
 });
 
 router.get('/preview', async (req, res) => {
