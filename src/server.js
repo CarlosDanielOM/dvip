@@ -13,7 +13,7 @@ async function startServer() {
 
     app.use('/dispatch', dispatchRoutes);
     app.use('/pictures', picturesRoutes);
-    app.use('/driver', driverRoutes);
+    app.use('/drivers', driverRoutes);
     
     app.listen(3535, () => {
         console.log("Server is running on port 3535");

@@ -63,7 +63,7 @@ router.post('/', async (req, res) => {
         return;
     }
 
-    res.json({error: false, message: 'Successfully saved driver', status: 200, data: driver});
+    res.json({error: false, message: 'Successfully saved driver', status: 200, data: {driver}});
 });
 
 router.post('/login', async (req, res) => {
