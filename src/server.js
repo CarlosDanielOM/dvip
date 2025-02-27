@@ -15,8 +15,8 @@ async function startServer() {
     app.use('/pictures', picturesRoutes);
     app.use('/drivers', driverRoutes);
     
-    app.listen(3535, () => {
-        console.log("Server is running on port 3535");
+    app.listen(4040, () => {
+        console.log("Server is running on port 4040");
     });
 }
 
