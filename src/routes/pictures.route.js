@@ -77,8 +77,8 @@ router.post('/', async (req, res) => {
 
     let keys = await cacheClient.keys(`dvip:${vehicle}:*`);
 
-    if(keys.length === 0) {
-        res.status(400).json({error: true, message: 'No pictures found', status: 400});
+    if(keys.length == 0) {
+        res.status(404).json({error: true, message: 'No pictures found', status: 404});
         return;
     }
 
