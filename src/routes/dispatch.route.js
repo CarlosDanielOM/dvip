@@ -34,7 +34,8 @@ router.post('/', async (req, res) => {
         first_name,
         last_name,
         email,
-        password: hashedPassword
+        password: hashedPassword,
+        company: "Burst Logistics"
     });
     await newDispatch.save();
 
