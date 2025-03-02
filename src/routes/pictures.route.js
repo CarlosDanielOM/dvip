@@ -37,7 +37,7 @@ router.get('/', async (req, res) => {
 
     response.Contents = picturesUrls;
     
-    res.json({error: false, message: 'Successfully fetched pictures', status: 200, data: response.Contents}); res
+    return res.json({error: false, message: 'Successfully fetched pictures', status: 200, data: response.Contents});
     // res.json({error: false, message: 'Successfully fetched pictures', status: 200, data: {pictures}});
 });
 
