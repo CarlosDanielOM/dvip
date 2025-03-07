@@ -148,6 +148,8 @@ router.post('/upload', async (req, res) => {
     
         let pictureName = `${pictureData.vanType}${pictureData.vanNumber}-${pictureData.type}-${pictureData.driverName}-${pictureData.date}.jpg`;
 
+        await cacheClient.set(`dvip:${pictureData.vanType}${pictureData.vanNumber}:${pictureData.type}`, pictureNameURI);
+
         let uploadCommand = new PutObjectCommand({
             Bucket: process.env.S3_BUCKET,
             Key: `${dir}${pictureName}`,
@@ -166,8 +168,6 @@ router.post('/upload', async (req, res) => {
         }
 
         let pictureNameURI = `${dir}${pictureName}`;
-
-        await cacheClient.set(`dvip:${pictureData.vanType}${pictureData.vanNumber}:${pictureData.type}`, pictureNameURI);
 
         let pictureUrl = `${S3_PUBLIC_ENDPOINT}/${pictureNameURI}`;
         
