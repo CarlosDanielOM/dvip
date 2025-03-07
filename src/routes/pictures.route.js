@@ -148,6 +148,8 @@ router.post('/upload', async (req, res) => {
     
         let pictureName = `${pictureData.vanType}${pictureData.vanNumber}-${pictureData.type}-${pictureData.driverName}-${pictureData.date}.jpg`;
 
+        let pictureNameURI = `${dir}${pictureName}`;
+
         await cacheClient.set(`dvip:${pictureData.vanType}${pictureData.vanNumber}:${pictureData.type}`, pictureNameURI);
 
         let uploadCommand = new PutObjectCommand({
@@ -166,8 +168,6 @@ router.post('/upload', async (req, res) => {
             res.status(500).json({error: true, message: 'Error uploading picture', status: 500});
             return;
         }
-
-        let pictureNameURI = `${dir}${pictureName}`;
 
         let pictureUrl = `${S3_PUBLIC_ENDPOINT}/${pictureNameURI}`;
         
